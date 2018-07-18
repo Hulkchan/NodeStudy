@@ -18,6 +18,7 @@
   "homepage": "https://github.com/Hulkchan/NodeStudy#readme",
   "devDependencies": {
     "babel-eslint": "^8.2.6",
-    "chalk": "^2.4.1"
+    "chalk": "^2.4.1",
+    "handlebars": "^4.0.11"
   }
 }
