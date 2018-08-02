@@ -1,6 +1,6 @@
 const fs = require('fs')
 const path = require('path')
-const config = require('../config/defaultConfig')
+// const config = require('../config/defaultConfig')
 const promisify = require('util').promisify
 const Handlebars = require('handlebars')
 const stat = promisify(fs.stat)
@@ -13,14 +13,31 @@ const template = Handlebars.compile(source)
 const mime = require('./mine')
 const compress = require('./compress')
 
-module.exports = async function(req, res, filePath) {
+const range = require('./range')
+const isFresh = require('../helper/cache')
+
+module.exports = async function(req, res, filePath, config) {
     try {
         const stats = await stat(filePath)
         if (stats.isFile()) {
             const contentType = mime(filePath)
-            res.statusCode = 200
+            
             res.setHeader('Content-Type', contentType)
-            let rs = fs.createReadStream(filePath)
+            if(isFresh(stats, req, res)) {
+                res.statusCode = 304
+                res.end()
+                return
+            }
+
+            let rs
+            const { code, start, end } = range(stats.size, req, res)
+            if(code === 200) {
+                rs = fs.createReadStream(filePath)
+                res.statusCode = 200
+            }else{
+                rs = fs.createReadStream(filePath, {start, end})
+                res.statusCode = 206
+            }
             if (filePath.match(config.compress)) {
                 rs = compress(rs, req, res)
             }
